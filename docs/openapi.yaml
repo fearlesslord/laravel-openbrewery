@@ -1,0 +1,202 @@
+openapi: 3.0.3
+info:
+  title: Laravel Brew API
+  description: API per effettuare il login ed ottenere un elenco di birrerie (proxy verso OpenBreweryDb).
+  version: "1.0.0"
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+paths:
+  /api/login:
+    post:
+      summary: Effettua il login e restituisce un token
+      description: >
+        Richiede credenziali (`user` e `password`).
+        Se valide, restituisce un token per accedere alle rotte protette.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: string
+                  example: root
+                password:
+                  type: string
+                  example: password
+      responses:
+        '200':
+          description: Login effettuato con successo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                        description: Token di accesso da usare per le chiamate protette
+                    example:
+                      token: "21|abcdefg123456"
+                  message:
+                    type: string
+                    example: Login effettuato con successo
+        '401':
+          description: Credenziali non valide
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                example:
+                  message: Credenziali non valide
+        '422':
+          description: Errore di validazione
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  errors:
+                    type: object
+                example:
+                  message: I dati forniti non sono validi.
+                  errors:
+                    user:
+                      - Il campo user è obbligatorio
+
+  /api/breweries:
+    get:
+      summary: Restituisce la lista di birrerie
+      description: >
+        Ritorna un array di birrerie, recuperate da [OpenBreweryDb](https://www.openbrewerydb.org/documentation/).
+        Richiede l'header `Authorization: Bearer <token>`.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          example: "Bearer 21|abcdefg123456"
+        - name: page
+          in: query
+          description: Numero di pagina
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+          example: 1
+        - name: per_page
+          in: query
+          description: Quanti elementi mostrare per pagina (max 200)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+          example: 10
+      responses:
+        '200':
+          description: Birrerie recuperate con successo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Birrerie recuperate con successo
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: "5128df48-79fc-4f0f-8b52-d06be54d0cec"
+                        name:
+                          type: string
+                          example: "(405) Brewing Co"
+                        brewery_type:
+                          type: string
+                          example: micro
+                        address_1:
+                          type: string
+                          nullable: true
+                        city:
+                          type: string
+                        state:
+                          type: string
+                          nullable: true
+                        country:
+                          type: string
+                        phone:
+                          type: string
+                          nullable: true
+                        website_url:
+                          type: string
+                          nullable: true
+                        longitude:
+                          type: string
+                          nullable: true
+                        latitude:
+                          type: string
+                          nullable: true
+              examples:
+                example-success:
+                  summary: Esempio di successo
+                  value:
+                    message: Birrerie recuperate con successo
+                    data:
+                      "id": "5128df48-79fc-4f0f-8b52-d06be54d0cec"
+                      "name": "(405) Brewing Co"
+                      "brewery_type": "micro"
+                      "address_1": "1716 Topeka St"
+                      "address_2": null
+                      "address_3": null
+                      "city": "Norman"
+                      "state": "Oklahoma"
+                      "state_province": "Oklahoma"
+                      "postal_code": "73069-8224"
+                      "country": "United States"
+                      "street": "1716 Topeka St"
+                      "longitude": "-97.46818222"
+                      "latitude": "35.25738891"
+                      "phone": "4058160490"
+                      "website_url": "http://www.405brewing.com"
+        '401':
+          description: Token non valido o assente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                example:
+                  message: Non autorizzato
+        '422':
+          description: Parametri non validi (es. per_page > 200)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  errors:
+                    type: object
+                example:
+                  message: I dati forniti non sono validi
+                  errors:
+                    per_page:
+                      - Il parametro "per_page" non può superare 200

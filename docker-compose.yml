@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+    # Servizio PHP
+    php:
+        build:
+            context: .
+            dockerfile: docker/php/Dockerfile
+        container_name: laravel-php
+        volumes:
+            - ./:/var/www/html
+        networks:
+            - laravel-net
+        depends_on:
+            - db
+
+    # Servizio Nginx
+    nginx:
+        image: nginx:latest
+        container_name: laravel-nginx
+        ports:
+            - "8080:80"
+        volumes:
+            - ./:/var/www/html
+            - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+        depends_on:
+            - php
+        networks:
+            - laravel-net
+
+    # Servizio MySQL
+    db:
+        image: mysql:8
+        container_name: laravel-mysql
+        environment:
+            MYSQL_ROOT_PASSWORD: root
+            MYSQL_DATABASE: laravel_db
+            MYSQL_USER: laravel_user
+            MYSQL_PASSWORD: laravel_pwd
+        ports:
+            - "3307:3306"   # 3307 host -> 3306 container
+        volumes:
+            - dbdata:/var/lib/mysql
+        networks:
+            - laravel-net
+
+networks:
+    laravel-net:
+
+volumes:
+    dbdata:
